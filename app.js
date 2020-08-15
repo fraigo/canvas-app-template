@@ -1,221 +1,350 @@
-(function(){
-    var scene=document.getElementById("scene");
-    var ctx=scene.getContext("2d");
-    var unit=1;
-    var PI=Math.PI;
-    var PI2=2*Math.PI;
-    var w=window.innerWidth;
-    var h=window.innerHeight;
+window.addEventListener("error",function (msg, url, line, col, error){
+    console.log(msg, url, line, col, error);
+    alert(msg);
+})
 
-    window.radial=function(ctx,x,y,radius,color1,color2){
-        x*=unit;
-        y*=unit;
-        radius*=unit;
-        var grd = ctx.createRadialGradient(x, y, 0, x, y, radius);
-        grd.addColorStop(0, color1);
-        grd.addColorStop(1, color2);
-        return grd;
+function Command(options) {
+    this.id=options.id;
+    this.x=options.x;
+    this.y=options.y;
+    this.w=options.w;
+    this.h=options.h;
+    this.border=options.border;
+    this.fill=options.fill;
+    this.text=options.text;
+    this.start=options.start;
+    this.end=options.end;
+    this.fontColor=options.fontColor;
+    this.fontSize=options.fontSize;
+    this.textAlign=options.textAlign?options.textAlign:"center";
+    this.visible='visible' in options? options.visible : true;
+}
+
+var line=0;
+var points =[];
+var ui =[];
+var time = 0;
+var direction=1;
+var barWidth=500;
+var barHeight=60;
+var score=new Command({
+    id:"rect",
+    x: 880,
+    y: 30,
+    w: 90,
+    h: 30,
+    fontColor: "#fff",
+    textAlign: "right",
+    text: "0"
+});
+var maxScore=new Command({
+    id:"rect",
+    x: 880,
+    y: 60,
+    w: 90,
+    h: 30,
+    fontColor: "#888",
+    textAlign: "right",
+    text: storeRecord("towers.max_score",0)
+});
+var stageClear=new Command({
+    id:"rect",
+    x: 0,
+    y: 0,
+    w: 1000,
+    h: 750,
+    fill: "rgba(0,0,0,0.5)",
+    fontColor: "#fff",
+    text: "Stage Cleared",
+    visible: false
+});
+var stageNum=new Command({
+    id:"rect",
+    x: 30,
+    y: 30,
+    w: 90,
+    h: 30,
+    fontColor: "#fff",
+    text: "Stage 1",
+    visible: true
+});
+ui.push(score);
+ui.push(maxScore);
+ui.push(stageNum);
+ui.push(stageClear);
+var tickId=0;
+var canvas = null;
+var interval = 40;
+var step = 10;
+var running = false;
+var basey=740;
+var stageNumber = 1;
+
+
+function drawItem(ctx,item, unit){
+    if (!item.visible){
+        return;
     }
-
-    window.fillStyle=function(fill){
-        if (fill[0]=="radial"){
-            ctx.fillStyle=radial(ctx, fill[1],fill[2],fill[3],fill[4],fill[5])
-        }else{
-            ctx.fillStyle=fill;
-        }
+    if (item.fill){
+        ctx.fillStyle=item.fill;
     }
-
-    window.rect = function(x,y,width,height,border,fill){
-        var ctx=scene.getContext("2d");
-        x*=unit;
-        y*=unit;
-        width*=unit;
-        height*=unit;
-        if (border){
-            ctx.strokeStyle=border;
-        }
-        if (fill){
-            ctx.fillStyle=fillStyle(fill);
-        }
-        if (border){
-            ctx.drawRect(x,y,width,height);
-        }
-        if (fill){
-            ctx.fillRect(x,y,width,height);
-        }
+    if (item.border){
+        ctx.strokeStyle =item.border;
     }
+    var x=item.x*unit;
+    var y=item.y*unit;
+    var w=item.w?item.w*unit:0;
+    var h=item.h?item.h*unit:0;
+    var start=item.start?item.start:0;
+    var end=item.end?item.end:2*Math.PI;
 
-    window.circle=function(x,y,radio,border,fill){
-        window.arc(x,y,radio,0,2*Math.PI,border,fill);
+    if (item.id==="rect" && item.fill){
+        ctx.fillRect(x,y,w,h);
     }
-
-    window.arc=function(x,y,radio,start,end,border,fill){
-        var ctx=scene.getContext("2d");
-        x=x*unit;
-        y=y*unit;
-        radio*=unit;
-        if (border){
-            ctx.strokeStyle=border;
-        }
-        if (fill){
-            ctx.fillStyle=fillStyle(fill);
-        }
+    if (item.id==="rect" && item.border && w>0){
+        ctx.strokeRect(x,y,w,h);
+    }
+    if (item.id==="ellipse" && w>0){
         ctx.beginPath();
-        ctx.arc(x,y,radio,start, end)
-        if (border){
-            ctx.stroke();
-        }
-        if (fill){
+        ctx.ellipse(x,y,w/2,h/2,0,start,end);
+        if (item.fill){
             ctx.fill();
         }
-    }
-
-    window.ellipse=function(x,y,radiusX,radiusY,start,end,border,fill){
-        var ctx=scene.getContext("2d");
-        x=x*unit;
-        y=y*unit;
-        radiusX*=unit;
-        radiusY*=unit;
-        if (border){
-            ctx.strokeStyle=border;
-        }
-        if (fill){
-            ctx.fillStyle=fillStyle(fill);
-        }
-        ctx.beginPath();
-        ctx.ellipse(x,y,radiusX,radiusY,0,start,end);
-        if (border){
+        if (item.border){
             ctx.stroke();
         }
-        if (fill){
-            ctx.fill();
+    }
+    if (item.text){
+        var fh=Math.round((item.fontSize?item.fontSize*unit:30*unit));
+        ctx.font=fh+"px Arial";
+        ctx.textAlign = item.textAlign?item.textAlign:"center";
+        var textX=x+w/2;
+        if (ctx.textAlign=="left"){
+            textX=x+2;
         }
-    }   
-
-    window.eye=function(cx,cy,dx,dy){
-        if (!dx) dx=0;
-        if (!dy) dy=10;                
-        drawItems([
-            ["ellipse",cx,cy,60,40,0,PI2,"#EEEE00",["radial",cx,cy,40,"#ffffff","#eeeeee"]],
-            ["circle",cx+dx,cy+dy,30,null,["radial",cx+dx,cy+dy,20,"#884400","#663300"]],
-            ["circle",cx+dx,cy+dy,10,null,"black"],
-        ])
-    }
-
-    window.mouth=function(cx,cy, height){
-        if (!height) height=180;
-        drawItems([
-            //mouth
-            ["ellipse",cx,cy,200,height,0,PI,null,["radial",cx,cy,120,"#600000","#C00000"]],
-            //teeth
-            ["ellipse",cx-150,cy,50,40,0,PI,null,"white"],
-            ["ellipse",cx-50,cy,50,40,0,PI,null,"white"],
-            ["ellipse",cx+50,cy,50,40,0,PI,null,"white"],
-            ["ellipse",cx+150,cy,50,40,0,PI,null,"white"],
-            //tongue
-            ["ellipse",cx,cy+height-50,80,40,0,PI,null,["radial",cx,cy+height-50,80,"#F00000","#D00000"]],
-        ])
-    }
-
-    var eye1 = ["eye",400,220,0,10];
-    var eye2 = ["eye",600,220,0,10];
-    var mouth1 = ["mouth",500,420,160];
-    var nose1 = ["ellipse",500,350,30,50,PI,PI2,null,"#CC8844"];
-    var grad = ["radial",500,360,350,"#eecc00","#ffff00"];
-    
-
-    scene.addEventListener("mousemove",function(ev){
-        var dx=ev.offsetX/w-0.5;
-        var dy=ev.offsetY/h-0.5;
-        //console.log(Math.round(50*dx),Math.round(50*dy));
-        eye1[3]=50*dx;
-        eye2[3]=50*dx;
-        eye1[4]=25*dy;
-        eye2[4]=25*dy;
-        mouth1[3]=140+40*dy;
-        nose1[2]=350+10*dy;
-        nose1[4]=40+5*dy;
-        update();
-    })
-
-    scene.addEventListener("mousedown",function(ev){
-        update();
-    });
-
-    scene.addEventListener("mouseup",function(ev){
-        update();
-    });
-
-    var data=[
-        ["rect",0,0,1000,750,null,"#222"],
-        //face
-        ["ellipse",500,360,300,310,0,PI2,"#EEEE00",grad],
-        //eye
-        eye1,
-        //eye
-        eye2,
-        //nose
-        nose1,
-        //mouth
-        mouth1,
-    ]
-
-    function resize(){
-        var ratio=4/3;
-        var dw = Math.max(document.documentElement.clientWidth || 0, window.innerWidth || 0)
-        var dh = Math.max(document.documentElement.clientHeight || 0, window.innerHeight || 0)
-        w=dw;
-        h=dh;
-        if (w/ratio>h){
-            w=h*ratio;
-        }else{
-            h=w/ratio;
+        if (ctx.textAlign=="right"){
+            textX=x+w-2;
         }
-        console.log(dw,dh,w,h,w/h);
-        scene.setAttribute("width",w);
-        scene.setAttribute("height",h);
-        unit=w/1000;
-        update();
-    }
-
-    function drawItems(items){
-        for(var index in items){
-            var item=items[index];
-            drawItem(item);
+        if (item.border || item.fontColor){
+            ctx.fillStyle =item.fontColor ? item.fontColor : item.border;
         }
-    }
-
-    function drawItem(item){
-        if (typeof(window[item[0]])!="function"){
-            console.error("Unknown function",item[0]);
-            return;
-        }
-        window[item[0]](item[1],item[2],item[3],item[4],item[5],item[6],item[7],item[8]);
-    }
-
-    function update(){
-        drawItems(data);
-    }
-
-    window.addEventListener("resize",resize);
-    resize();
-
-
-    
-})();
-
-
-function openFullscreen(elem) {
-    if (elem.requestFullscreen) {
-        elem.requestFullscreen();
-    } else if (elem.mozRequestFullScreen) { /* Firefox */
-        elem.mozRequestFullScreen();
-    } else if (elem.webkitRequestFullscreen) { /* Chrome, Safari and Opera */
-        elem.webkitRequestFullscreen();
-    } else if (elem.msRequestFullscreen) { /* IE/Edge */
-        elem.msRequestFullscreen();
+        ctx.fillText(item.text,textX,y+h/2+fh/3,w);
     }
 }
+
+function repaint(){
+    if (canvas){
+        const unit = getViewport()[2];
+        var ctx=canvas.getContext("2d");
+        if (ctx){
+            ctx.fillStyle="#000";
+            ctx.fillRect(0,0,1000*unit,750*unit);
+            for(var idx in points){
+                var pt=points[idx];
+                drawItem(ctx, pt, unit);
+            }
+            for(var idx in ui){
+                var pt=ui[idx];
+                drawItem(ctx, pt, unit);
+            }
+        }
+    }
+}
+function getViewport(){
+    var ratio=4/3;
+    var unit=1;
+    var dw = Math.max(document.documentElement.clientWidth || 0, window.innerWidth || 0)
+    var dh = Math.max(document.documentElement.clientHeight || 0, window.innerHeight || 0)
+    var w=dw;
+    var h=dh;
+    if (w/ratio>h){
+        w=h*ratio;
+    }else{
+        h=w/ratio;
+    }
+    var pixelRatio=1;
+    if (window.devicePixelRatio && window.devicePixelRatio>1){
+        w*=window.devicePixelRatio;
+        h*=window.devicePixelRatio; 
+        pixelRatio=window.devicePixelRatio; 
+        console.log(pixelRatio);
+    }
+    unit=w/1000;
+    return [w,h,unit,pixelRatio];
+}
+
+function handleClick(ev){
+    if (ev.target===canvas){
+        const unit = getViewport()[2];
+        var nx=ev.offsetX/unit;
+        var ny=ev.offsetY/unit;
+        clickCanvas(nx,ny);
+    }
+}
+function handleTouch(ev){
+    if (ev.target===canvas){
+        const unit = getViewport()[2];
+        var element  = ev.target;
+        var rect=element.getBoundingClientRect();
+        console.log(ev.touches[0],rect);
+        var nx=(ev.touches[0].pageX-rect.left)/unit;
+        var ny=(ev.touches[0].pageY-rect.top)/unit;
+        clickCanvas(nx,ny);
+    }
+}
+
+function  clickCanvas(nx,ny){
+    if (stageClear.text=="Game Over"){
+        stageClear.text="";
+        score.text="0";
+        stageNumber=1;
+        barHeight=60;
+        stageNum.text="Stage "+stageNumber;
+        interval=40;
+        startStage();
+        return;
+    }
+    console.log(line,points);
+    if (line>0 && running){
+        var bar =points[line];
+        var bar0 = points[line-1];
+        var bw = (bar.w?bar.w:0);
+        var newX0=Math.max(bar.x,0);
+        var newX1=Math.min(bar.x+bw,1000);
+        var newWidth=Math.max(0,newX1-newX0);
+
+        if (line>0){
+            if (bar0){
+                newX0=Math.max(bar.x,points[line-1].x);
+                newX1=Math.min(bar.x+bw,points[line-1].x+(bar0.w?bar0.w:0));
+                newWidth=Math.max(0,newX1-newX0);
+            }
+        }
+        console.log("new",newX0,newX1,newWidth);
+        bar.x=newX0;
+        bar.w=newWidth;   
+        bar.text=""+newWidth;
+        bar.fontSize=Math.min(30,Math.max(newWidth/10,12));
+        score.text=(+score.text)+newWidth; 
+        var maxsc=storeRecord("towers.max_score",+score.text);
+        if (maxsc>+maxScore.text){
+            maxScore.fontColor="#FF0";
+            maxScore.text=maxsc;
+        }
+        console.log(points[line].x);
+    }
+    repaint();
+    if (running){
+        line++;
+    }
+}
+
+function storeRecord(name,value){
+    var oldValue=localStorage.getItem(name);
+    if (!oldValue){
+        oldValue=0;
+    }
+    var newValue=Math.max(value,oldValue);
+    localStorage.setItem(name,newValue);
+    return newValue;
+}
+
+function tick(){
+    if (line>=points.length){
+        var prev=points[line-1];
+        var pw=barWidth;
+        var py=line*barHeight;
+        direction=Math.round(Math.random())==0?1:-1;
+        if (prev){
+            pw=prev.w;
+            if (pw<2){
+                running = false;
+                stageClear.visible=true;
+                stageClear.text="Game Over";
+                repaint();
+                return;
+            }
+            if ((basey-py)<barHeight){
+                running = false;
+                stageClear.visible=true;
+                stageClear.text="Stage "+stageNumber+" cleared";
+                repaint();
+                setTimeout(function(){
+                    storeRecord("towers.max_score",+score.text);
+                    storeRecord("towers.max_stage",+stageNumber);
+                    stageNumber++;
+                    stageNum.text="Stage "+stageNumber;
+                    startStage();
+                },3000);
+                return;
+            }
+        }
+        var px=0;
+        if (direction==-1){
+            px=1000-pw;
+        }
+        points.push(new Command({id: "rect", x: px, y:basey-py, w:pw, h:barHeight, fill: "#FF0", border: "#DD0", fontColor:"#800"}))    
+    }else if(line>0){
+        points[line].x+=direction*step;
+        if (points[line].x+points[line].w>1000){
+            direction=-1;
+        }
+        if (points[line].x<0){
+            direction=1;
+        }
+    }
+    repaint();
+    if (tickId){
+        window.clearTimeout(tickId);
+    }
+    tickId=window.setTimeout(tick,interval);
+}    
+
+
+function startStage(){
+    line=0;
+    barWidth=500;
+    barHeight-=2;
+    if (interval<=20){
+        interval-=2
+    }else{
+        interval-=5;
+    }
+    direction=Math.round(Math.random())==0?1:-1;
+    stageClear.visible=false;
+    points.splice(0,points.length);
+    points.push(new Command({id: "rect", x: 250, y:basey, w:barWidth, h:barHeight, fill: "#FF0", border: "#CC0"})) 
+    console.log("start",points);
+    repaint();
+    if (tickId){
+        window.clearTimeout(tickId);
+    }
+    tickId=window.setTimeout(tick,50);
+    running=true;
+}
+
+
+var isTouch = 'ontouchstart' in window || navigator.msMaxTouchPoints;
+if (isTouch){
+    window.addEventListener("touchstart",handleTouch);
+}else{
+    window.addEventListener("click",handleClick);
+}
+
+(function(){
+    var vp= getViewport();
+    canvas = document.getElementById("scene");
+    canvas.setAttribute("width",vp[0]);
+    canvas.setAttribute("height",vp[1]);    
+    canvas.setAttribute("ratio",vp[3]); 
+    canvas.style.width=   (vp[0]/vp[3])+"px";
+    repaint();
+    window.addEventListener('resize', function(){ clearTimeout(time); time=window.setTimeout(handleResize,500) });
+    if (!running){
+        startStage();
+    }
+    
+})();
 
 
 (function(doc) {
@@ -238,4 +367,5 @@ function openFullscreen(elem) {
     }
 
 }(document));
+
 
