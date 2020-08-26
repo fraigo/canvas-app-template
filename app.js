@@ -41,7 +41,7 @@ var score=new Sprite({
 var maxScore=new Sprite({
     id:"rect",
     x: 880,
-    y: 60,
+    y: 70,
     w: 90,
     h: 30,
     fontColor: "#888",
@@ -63,15 +63,29 @@ var stageNum=new Sprite({
     id:"rect",
     x: 30,
     y: 30,
-    w: 90,
+    w: 120,
     h: 30,
     fontColor: "#fff",
     text: "Stage 1",
+    textAlign: "left",
     visible: true
 });
+var stageMax=new Sprite({
+    id:"rect",
+    x: 30,
+    y: 70,
+    w: 120,
+    h: 30,
+    fontColor: "#C00",
+    textAlign: "left",
+    text: "Max Stage "+storeRecord("towers.max_stage",1),
+    visible: true
+});
+
 ui.push(score);
 ui.push(maxScore);
 ui.push(stageNum);
+ui.push(stageMax);
 ui.push(stageClear);
 
 
@@ -144,6 +158,9 @@ function clickCanvas(scene){
             maxScore.fontColor="#FF0";
             maxScore.text=maxsc;
         }
+        var maxst=storeRecord("towers.max_stage",stageNumber);
+        stageMax.text="Max Stage "+maxst;
+        
     }
     if (running){
         line++;
@@ -178,6 +195,8 @@ function tick(scene){
                 running = false;
                 stageClear.visible=true;
                 stageClear.text="Stage "+stageNumber+" cleared";
+                var maxst=storeRecord("towers.max_stage",stageNumber);
+                stageMax.text="Max Stage "+maxst;
                 return;
             }
         }
