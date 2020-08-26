@@ -4,13 +4,30 @@ window.addEventListener("error",function (msg, url, line, col, error){
 })
 
 
-var line=0;
+var line=-1;
 var points =[];
 var ui =[];
 var time = 0;
 var direction=1;
 var barWidth=500;
 var barHeight=60;
+var step = 10;
+var running = false;
+var basey=740;
+var stageNumber = 1;
+var initialInterval = 40;
+var combo=0;
+
+var colors={
+    bar: "#BB0",
+    combo: "#0A0"
+}
+var gradients={
+    bar: {type:"linear",colors:["#ff0","#a90"]},
+    combo: {type:"linear",colors:["#3D2","#2a1"]},
+}
+
+
 var score=new Sprite({
     id:"rect",
     x: 880,
@@ -39,8 +56,8 @@ var stageClear=new Sprite({
     h: 750,
     fill: "rgba(0,0,0,0.5)",
     fontColor: "#fff",
-    text: "Stage Cleared",
-    visible: false
+    text: "Click to Start",
+    visible: true
 });
 var stageNum=new Sprite({
     id:"rect",
@@ -57,17 +74,14 @@ ui.push(maxScore);
 ui.push(stageNum);
 ui.push(stageClear);
 
-var step = 10;
-var running = false;
-var basey=740;
-var stageNumber = 1;
-var initialInterval = 40;
 
+function keyCanvas(scene, key){
+    console.log("key",key);
+    clickCanvas(scene);
+}
 
-
-
-function clickCanvas(scene, nx,ny){
-    if (stageClear.text=="Game Over"){
+function clickCanvas(scene){
+    if (stageClear.text=="Game Over" || stageClear.text=="Click to Start"){
         stageClear.text="";
         score.text="0";
         stageNumber=1;
@@ -98,6 +112,16 @@ function clickCanvas(scene, nx,ny){
                 newX0=Math.max(bar.x,points[line-1].x);
                 newX1=Math.min(bar.x+bw,points[line-1].x+(bar0.w?bar0.w:0));
                 newWidth=Math.max(0,newX1-newX0);
+                if (newWidth==bar0.w){
+                    bar.fill=gradients.combo;
+                    bar0.fill=gradients.combo;
+                    bar.border=colors.combo;
+                    bar0.border=colors.combo;
+                    combo++;
+                    bar0.text=newWidth + " x"+combo;
+                }else{
+                    combo=0;
+                }
             }
         }
         console.log("new",newX0,newX1,newWidth);
@@ -107,7 +131,11 @@ function clickCanvas(scene, nx,ny){
         }else{
             bar.x=newX0;
             bar.w=newWidth;
-            bar.text=""+newWidth;
+            if (combo>0){
+                bar.text=""+newWidth+" x"+(combo+1);
+            }else{
+                bar.text=""+newWidth;
+            }
             bar.fontSize=Math.min(30,Math.max(newWidth/10,12));
         }
         score.text=(+score.text)+newWidth; 
@@ -116,7 +144,6 @@ function clickCanvas(scene, nx,ny){
             maxScore.fontColor="#FF0";
             maxScore.text=maxsc;
         }
-        console.log(points[line].x);
     }
     if (running){
         line++;
@@ -154,11 +181,12 @@ function tick(scene){
                 return;
             }
         }
-        var px=0;
+        var offset=Math.round(Math.random()*5)*10;
+        var px=0-offset;
         if (direction==-1){
-            px=1000-pw;
+            px=1000-pw+offset;
         }
-        points.push(new Sprite({id: "rect", x: px, y:basey-py, w:pw, h:barHeight, fill: "#FF0", border: "#DD0", fontColor:"#800"}))    
+        points.push(new Sprite({id: "rect", x: px, y:basey-py, w:pw, h:barHeight, fill: gradients.bar, border: colors.bar, fontColor:"#800"}))    
     }else if(line>0){
         points[line].x+=direction*step;
         if (points[line].x+points[line].w>1000){
@@ -167,6 +195,8 @@ function tick(scene){
         if (points[line].x<0){
             direction=1;
         }
+    }else{
+        
     }
 }    
 
@@ -184,7 +214,7 @@ function startStage(scene){
     direction=Math.round(Math.random())==0?1:-1;
     stageClear.visible=false;
     points.splice(0,points.length);
-    points.push(new Sprite({id: "rect", x: 250, y:basey, w:barWidth, h:barHeight, fill: "#FF0", border: "#CC0"})) 
+    points.push(new Sprite({id: "rect", x: 250, y:basey, w:barWidth, h:barHeight, fill: gradients.bar, border: colors.bar})) 
     running=true;
 }
 
@@ -195,10 +225,12 @@ function startStage(scene){
         ratio: 4/3,
         onTick: tick,
         onClick: clickCanvas,
-        interval: initialInterval
+        interval: initialInterval,
+        onKeyDown: keyCanvas,
     });
+    scene.points=points;
+    scene.ui=ui;
     scene.init();
-    startStage(scene);
     scene.start();
     
 })();
