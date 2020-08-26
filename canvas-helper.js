@@ -36,8 +36,12 @@ function Scene(canvas, options){
 
     this.onTick=options.onTick;
     this.onClick=options.onClick;
+    this.onKeyDown=options.onKeyDown;
+    this.onKeyUp=options.onKeyUp;
 
     var tickId=0;
+    this.points=[];
+    this.ui=[];
     
     this.getViewport=function(){
         var dw = Math.max(document.documentElement.clientWidth || 0, window.innerWidth || 0)
@@ -58,6 +62,17 @@ function Scene(canvas, options){
         }
         unit=w/1000;
         return [w,h,unit,pixelRatio];
+    }
+
+
+    this.linearGradient=function(x1,y1,x2,y2,colors){
+        var grd = ctx.createLinearGradient(x1,y1,x2,y2);
+        grd.addColorStop(0, colors[0]);
+        var step=1/(colors.length-1);
+        for(var idx=1;idx<colors.length;idx++){
+            grd.addColorStop(Math.min(1.0,step*idx), colors[idx]);
+        }
+        return grd;
     }
 
     this.handleResize=function(){
@@ -116,6 +131,22 @@ function Scene(canvas, options){
         }
     }
 
+    this.handleKey=function(type,ev){
+        if (type=="keydown"){
+            this.isDown=true;
+        }
+        if (type=="keyup"){
+            this.isDown=false;
+        }
+        //console.log("key",ev.keyCode,this.isDown)
+        if (this.onKeyDown && !this.isDown){
+            this.onKeyDown(self,ev.keyCode,ev);
+        }
+        if (this.onKeyUp){
+            this.onKeyUp(self,ev.keyCode,ev);
+        }
+    }
+
     this.handleTouch=function(ev){
         if (ev.target===canvas){
             var unit = this.getViewport()[2];
@@ -134,7 +165,11 @@ function Scene(canvas, options){
             return;
         }
         if (item.fill){
-            ctx.fillStyle=item.fill;
+            if (item.fill.type=="linear"){
+                ctx.fillStyle=this.linearGradient(item.x,item.y,item.x+item.w,item.y+item.h,item.fill.colors);
+            }else{
+                ctx.fillStyle=item.fill;
+            }
         }
         if (item.border){
             ctx.strokeStyle =item.border;
@@ -187,12 +222,12 @@ function Scene(canvas, options){
         if (ctx){
             ctx.fillStyle="#000";
             ctx.fillRect(0,0,1000*unit,750*unit);
-            for(var idx in points){
-                var pt=points[idx];
+            for(var idx in this.points){
+                var pt=this.points[idx];
                 this.drawItem(pt, unit);
             }
-            for(var idx in ui){
-                var pt=ui[idx];
+            for(var idx in this.ui){
+                var pt=this.ui[idx];
                 this.drawItem(pt, unit);
             }
         }
@@ -209,6 +244,12 @@ function Scene(canvas, options){
             self.handleClick(ev);
         });
     }
+    window.addEventListener("keydown",function(ev){
+        self.handleKey("keydown",ev);
+    });
+    window.addEventListener("keyup",function(ev){
+        self.handleKey("keyup",ev);
+    });
 
 }
 
