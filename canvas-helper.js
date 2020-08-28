@@ -42,7 +42,7 @@ function Scene(canvas, options){
     this.onKeyUp=options.onKeyUp;
 
     var tickId=0;
-    this.points=[];
+    this.items=[];
     this.ui=[];
     
     this.getViewport=function(){
@@ -271,8 +271,8 @@ function Scene(canvas, options){
         if (ctx){
             ctx.fillStyle="#000";
             ctx.fillRect(0,0,1000*unit,750*unit);
-            for(var idx in this.points){
-                var pt=this.points[idx];
+            for(var idx in this.items){
+                var pt=this.items[idx];
                 this.drawItem(pt, unit);
             }
             for(var idx in this.ui){
