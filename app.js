@@ -5,7 +5,7 @@ window.addEventListener("error",function (msg, url, line, col, error){
 
 
 var line=-1;
-var points =[];
+var items =[];
 var ui =[];
 var time = 0;
 var direction=1;
@@ -13,23 +13,26 @@ var barWidth=500;
 var barHeight=60;
 var step = 10;
 var running = false;
-var basey=740;
+var maxy=720;
+var basey=maxy-10;
 var stageNumber = 1;
 var initialInterval = 40;
 var combo=0;
 
 var colors={
     bar: "#BB0",
-    combo: "#0A0"
+    combo: "#080"
 }
 var gradients={
     bar: {type:"linear",colors:["#ff0","#a90"]},
-    combo: {type:"linear",colors:["#3D2","#2a1"]},
+    combo: {type:"linear",colors:["#3D2","#281"]},
 }
+
+var borders={tl: 10, tr: 10, br: 10, bl: 10};
 
 
 var score=new Sprite({
-    id:"rect",
+    type:"rect",
     x: 880,
     y: 30,
     w: 90,
@@ -39,17 +42,18 @@ var score=new Sprite({
     text: "0"
 });
 var maxScore=new Sprite({
-    id:"rect",
+    type:"rect",
     x: 880,
     y: 70,
     w: 90,
     h: 30,
     fontColor: "#888",
+    fontSize: 20,
     textAlign: "right",
     text: storeRecord("towers.max_score",0)
 });
 var stageClear=new Sprite({
-    id:"rect",
+    type:"rect",
     x: 0,
     y: 0,
     w: 1000,
@@ -60,7 +64,7 @@ var stageClear=new Sprite({
     visible: true
 });
 var stageNum=new Sprite({
-    id:"rect",
+    type:"rect",
     x: 30,
     y: 30,
     w: 120,
@@ -71,27 +75,37 @@ var stageNum=new Sprite({
     visible: true
 });
 var stageMax=new Sprite({
-    id:"rect",
+    type:"rect",
     x: 30,
     y: 70,
     w: 120,
-    h: 30,
+    h: 20,
+    fontSize: 20,
     fontColor: "#C00",
     textAlign: "left",
     text: "Max Stage "+storeRecord("towers.max_stage",1),
     visible: true
 });
 
+ui.push(stageClear);
 ui.push(score);
 ui.push(maxScore);
 ui.push(stageNum);
 ui.push(stageMax);
-ui.push(stageClear);
 
 
 function keyCanvas(scene, key){
     console.log("key",key);
     clickCanvas(scene);
+}
+
+function addScore(value){
+    score.text=(+score.text)+value; 
+    var maxsc=storeRecord("towers.max_score",+score.text);
+    if (maxsc>+maxScore.text){
+        maxScore.fontColor="#FF0";
+        maxScore.text=maxsc;
+    }
 }
 
 function clickCanvas(scene){
@@ -114,8 +128,8 @@ function clickCanvas(scene){
         startStage(scene);
     }
     if (line>0 && running){
-        var bar =points[line];
-        var bar0 = points[line-1];
+        var bar =items[line];
+        var bar0 = items[line-1];
         var bw = (bar.w?bar.w:0);
         var newX0=Math.max(bar.x,0);
         var newX1=Math.min(bar.x+bw,1000);
@@ -123,16 +137,23 @@ function clickCanvas(scene){
 
         if (line>0){
             if (bar0){
-                newX0=Math.max(bar.x,points[line-1].x);
-                newX1=Math.min(bar.x+bw,points[line-1].x+(bar0.w?bar0.w:0));
+                newX0=Math.max(bar.x,items[line-1].x);
+                newX1=Math.min(bar.x+bw,items[line-1].x+(bar0.w?bar0.w:0));
                 newWidth=Math.max(0,newX1-newX0);
                 if (newWidth==bar0.w){
                     bar.fill=gradients.combo;
-                    bar0.fill=gradients.combo;
+                    bar.borderRadius.bl=1;
+                    bar.borderRadius.br=1;
                     bar.border=colors.combo;
+                    bar0.fill=gradients.combo;
                     bar0.border=colors.combo;
+                    if (bar0.borderRadius){
+                        bar0.borderRadius.tl=1;
+                        bar0.borderRadius.tr=1;    
+                    }
                     combo++;
                     bar0.text=newWidth + " x"+combo;
+                    addScore(Math.round(newWidth/2)); 
                 }else{
                     combo=0;
                 }
@@ -152,12 +173,7 @@ function clickCanvas(scene){
             }
             bar.fontSize=Math.min(30,Math.max(newWidth/10,12));
         }
-        score.text=(+score.text)+newWidth; 
-        var maxsc=storeRecord("towers.max_score",+score.text);
-        if (maxsc>+maxScore.text){
-            maxScore.fontColor="#FF0";
-            maxScore.text=maxsc;
-        }
+        addScore(newWidth); 
         var maxst=storeRecord("towers.max_stage",stageNumber);
         stageMax.text="Max Stage "+maxst;
         
@@ -178,8 +194,8 @@ function storeRecord(name,value){
 }
 
 function tick(scene){
-    if (line>=points.length){
-        var prev=points[line-1];
+    if (line>=items.length){
+        var prev=items[line-1];
         var pw=barWidth;
         var py=line*barHeight;
         direction=Math.round(Math.random())==0?1:-1;
@@ -205,13 +221,19 @@ function tick(scene){
         if (direction==-1){
             px=1000-pw+offset;
         }
-        points.push(new Sprite({id: "rect", x: px, y:basey-py, w:pw, h:barHeight, fill: gradients.bar, border: colors.bar, fontColor:"#800"}))    
+        items.push(new Sprite({
+            type: "roundrect", 
+            x: px, y:basey-py, 
+            w:pw, h:barHeight, 
+            fill: gradients.bar, border: colors.bar, 
+            borderRadius: scene.borderRadius(borders),
+            fontColor:"#800"}))    
     }else if(line>0){
-        points[line].x+=direction*step;
-        if (points[line].x+points[line].w>1000){
+        items[line].x+=direction*step;
+        if (items[line].x+items[line].w>1000){
             direction=-1;
         }
-        if (points[line].x<0){
+        if (items[line].x<0){
             direction=1;
         }
     }else{
@@ -232,8 +254,8 @@ function startStage(scene){
     }
     direction=Math.round(Math.random())==0?1:-1;
     stageClear.visible=false;
-    points.splice(0,points.length);
-    points.push(new Sprite({id: "rect", x: 250, y:basey, w:barWidth, h:barHeight, fill: gradients.bar, border: colors.bar})) 
+    items.splice(0,items.length);
+    items.push(new Sprite({type: "rect", x: 250, y:basey, w:barWidth, h:barHeight, fill: gradients.bar, border: colors.bar})) 
     running=true;
 }
 
@@ -241,13 +263,13 @@ function startStage(scene){
 (function(){
     canvas = document.getElementById("scene");
     window.scene=new Scene(canvas, {
-        ratio: 4/3,
+        ratio: 1000/maxy,
         onTick: tick,
         onClick: clickCanvas,
         interval: initialInterval,
         onKeyDown: keyCanvas,
     });
-    scene.points=points;
+    scene.items=items;
     scene.ui=ui;
     scene.init();
     scene.start();

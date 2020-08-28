@@ -1,18 +1,20 @@
 
 
 function Sprite(options) {
-    this.id=options.id;
+    this.type=options.type;
     this.x=options.x;
     this.y=options.y;
     this.w=options.w;
     this.h=options.h;
     this.border=options.border;
+    this.borderRadius=options.borderRadius;
     this.fill=options.fill;
     this.text=options.text;
     this.start=options.start;
     this.end=options.end;
     this.fontColor=options.fontColor;
     this.fontSize=options.fontSize;
+    this.fontName=options.fontName?options.fontName:"Arial";
     this.textAlign=options.textAlign?options.textAlign:"center";
     this.visible='visible' in options? options.visible : true;
 }
@@ -40,7 +42,7 @@ function Scene(canvas, options){
     this.onKeyUp=options.onKeyUp;
 
     var tickId=0;
-    this.points=[];
+    this.items=[];
     this.ui=[];
     
     this.getViewport=function(){
@@ -74,6 +76,44 @@ function Scene(canvas, options){
         }
         return grd;
     }
+
+    this.borderRadius=function(radius, unit){
+        if (typeof unit === 'undefined') {
+            unit = 1;
+        }
+        if (typeof radius === 'undefined') {
+            radius = 5;
+        }
+        var rad = {tl: radius, tr: radius, br: radius, bl: radius};
+        if (typeof radius === 'object') {
+            for (var side in rad) {
+                rad[side] = radius[side]*unit || rad[side]*unit;
+            }
+        }
+        return rad;
+    }
+
+    this.roundRect=function(x, y, width, height, radius, fill, border) {
+        var rad=this.borderRadius(radius);
+        ctx.beginPath();
+        ctx.moveTo(x + rad.tl, y);
+        ctx.lineTo(x + width - rad.tr, y);
+        ctx.quadraticCurveTo(x + width, y, x + width, y + rad.tr);
+        ctx.lineTo(x + width, y + height - rad.br);
+        ctx.quadraticCurveTo(x + width, y + height, x + width - rad.br, y + height);
+        ctx.lineTo(x + rad.bl, y + height);
+        ctx.quadraticCurveTo(x, y + height, x, y + height - rad.bl);
+        ctx.lineTo(x, y + rad.tl);
+        ctx.quadraticCurveTo(x, y, x + rad.tl, y);
+        if (fill) {
+          ctx.fill();
+        }
+        if (border) {
+          ctx.stroke();
+        }
+        ctx.closePath();
+      
+      }
 
     this.handleResize=function(){
         var vp= this.getViewport();
@@ -178,16 +218,25 @@ function Scene(canvas, options){
         var y=item.y*unit;
         var w=item.w?item.w*unit:0;
         var h=item.h?item.h*unit:0;
+        var br=item.borderRadius?item.borderRadius:5;
+        var rad=this.borderRadius(br,unit);
+        if (typeof br=="object"){
+            br*=unit;
+            br.tl
+        }
         var start=item.start?item.start:0;
         var end=item.end?item.end:2*Math.PI;
 
-        if (item.id==="rect" && item.fill){
+        if (item.type==="rect" && item.fill){
             ctx.fillRect(x,y,w,h);
         }
-        if (item.id==="rect" && item.border && w>0){
+        if (item.type==="round" && item.border && w>0){
             ctx.strokeRect(x,y,w,h);
         }
-        if (item.id==="ellipse" && w>0){
+        if (item.type==="roundrect"){
+            this.roundRect(x,y,w,h,rad,item.fill,item.border);
+        }
+        if (item.type==="ellipse" && w>0){
             ctx.beginPath();
             ctx.ellipse(x,y,w/2,h/2,0,start,end);
             if (item.fill){
@@ -199,7 +248,7 @@ function Scene(canvas, options){
         }
         if (item.text){
             var fh=Math.round((item.fontSize?item.fontSize*unit:30*unit));
-            ctx.font=fh+"px Arial";
+            ctx.font=fh+"px "+item.fontName;
             ctx.textAlign = item.textAlign?item.textAlign:"center";
             var textX=x+w/2;
             if (ctx.textAlign=="left"){
@@ -222,8 +271,8 @@ function Scene(canvas, options){
         if (ctx){
             ctx.fillStyle="#000";
             ctx.fillRect(0,0,1000*unit,750*unit);
-            for(var idx in this.points){
-                var pt=this.points[idx];
+            for(var idx in this.items){
+                var pt=this.items[idx];
                 this.drawItem(pt, unit);
             }
             for(var idx in this.ui){
