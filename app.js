@@ -13,23 +13,26 @@ var barWidth=500;
 var barHeight=60;
 var step = 10;
 var running = false;
-var basey=740;
+var maxy=720;
+var basey=maxy-10;
 var stageNumber = 1;
 var initialInterval = 40;
 var combo=0;
 
 var colors={
     bar: "#BB0",
-    combo: "#0A0"
+    combo: "#080"
 }
 var gradients={
     bar: {type:"linear",colors:["#ff0","#a90"]},
-    combo: {type:"linear",colors:["#3D2","#2a1"]},
+    combo: {type:"linear",colors:["#3D2","#281"]},
 }
+
+var borders={tl: 10, tr: 10, br: 10, bl: 10};
 
 
 var score=new Sprite({
-    id:"rect",
+    type:"rect",
     x: 880,
     y: 30,
     w: 90,
@@ -39,17 +42,18 @@ var score=new Sprite({
     text: "0"
 });
 var maxScore=new Sprite({
-    id:"rect",
+    type:"rect",
     x: 880,
     y: 70,
     w: 90,
     h: 30,
     fontColor: "#888",
+    fontSize: 20,
     textAlign: "right",
     text: storeRecord("towers.max_score",0)
 });
 var stageClear=new Sprite({
-    id:"rect",
+    type:"rect",
     x: 0,
     y: 0,
     w: 1000,
@@ -60,7 +64,7 @@ var stageClear=new Sprite({
     visible: true
 });
 var stageNum=new Sprite({
-    id:"rect",
+    type:"rect",
     x: 30,
     y: 30,
     w: 120,
@@ -71,11 +75,12 @@ var stageNum=new Sprite({
     visible: true
 });
 var stageMax=new Sprite({
-    id:"rect",
+    type:"rect",
     x: 30,
     y: 70,
     w: 120,
-    h: 30,
+    h: 20,
+    fontSize: 20,
     fontColor: "#C00",
     textAlign: "left",
     text: "Max Stage "+storeRecord("towers.max_stage",1),
@@ -128,9 +133,15 @@ function clickCanvas(scene){
                 newWidth=Math.max(0,newX1-newX0);
                 if (newWidth==bar0.w){
                     bar.fill=gradients.combo;
-                    bar0.fill=gradients.combo;
+                    bar.borderRadius.bl=1;
+                    bar.borderRadius.br=1;
                     bar.border=colors.combo;
+                    bar0.fill=gradients.combo;
                     bar0.border=colors.combo;
+                    if (bar0.borderRadius){
+                        bar0.borderRadius.tl=1;
+                        bar0.borderRadius.tr=1;    
+                    }
                     combo++;
                     bar0.text=newWidth + " x"+combo;
                 }else{
@@ -205,7 +216,13 @@ function tick(scene){
         if (direction==-1){
             px=1000-pw+offset;
         }
-        points.push(new Sprite({id: "rect", x: px, y:basey-py, w:pw, h:barHeight, fill: gradients.bar, border: colors.bar, fontColor:"#800"}))    
+        points.push(new Sprite({
+            type: "roundrect", 
+            x: px, y:basey-py, 
+            w:pw, h:barHeight, 
+            fill: gradients.bar, border: colors.bar, 
+            borderRadius: scene.borderRadius(borders),
+            fontColor:"#800"}))    
     }else if(line>0){
         points[line].x+=direction*step;
         if (points[line].x+points[line].w>1000){
@@ -233,7 +250,7 @@ function startStage(scene){
     direction=Math.round(Math.random())==0?1:-1;
     stageClear.visible=false;
     points.splice(0,points.length);
-    points.push(new Sprite({id: "rect", x: 250, y:basey, w:barWidth, h:barHeight, fill: gradients.bar, border: colors.bar})) 
+    points.push(new Sprite({type: "rect", x: 250, y:basey, w:barWidth, h:barHeight, fill: gradients.bar, border: colors.bar})) 
     running=true;
 }
 
@@ -241,7 +258,7 @@ function startStage(scene){
 (function(){
     canvas = document.getElementById("scene");
     window.scene=new Scene(canvas, {
-        ratio: 4/3,
+        ratio: 1000/maxy,
         onTick: tick,
         onClick: clickCanvas,
         interval: initialInterval,
