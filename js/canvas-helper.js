@@ -17,6 +17,7 @@ function Sprite(options) {
     this.fontName=options.fontName?options.fontName:"Arial";
     this.textAlign=options.textAlign?options.textAlign:"center";
     this.visible='visible' in options? options.visible : true;
+    this.onclick=options.onclick;
 }
 
 
@@ -37,7 +38,8 @@ function Scene(canvas, options){
     var ctx=canvas.getContext("2d");
 
     this.onTick=options.onTick;
-    this.onClick=options.onClick;
+    this.onPointerDown=options.onPointerDown;
+    this.onPointerUp=options.onPointerUp;
     this.onKeyDown=options.onKeyDown;
     this.onKeyUp=options.onKeyUp;
 
@@ -148,9 +150,13 @@ function Scene(canvas, options){
         this.setInterval(this.interval);
     }
 
-    this.clickCanvas=function(x,y){
-        if (this.onClick){
-            this.onClick(self,x,y);
+    this.clickCanvas=function(type,x,y){
+        if (type=="down" && this.onPointerDown){
+            this.onPointerDown(self,x,y);
+            this.repaint();
+        }
+        if (type=="up" && this.onPointerUp){
+            this.onPointerUp(self,x,y);
             this.repaint();
         }
     }
@@ -162,12 +168,12 @@ function Scene(canvas, options){
         this.repaint();
     }
     
-    this.handleClick=function(ev){
+    this.handleClick=function(type,ev){
         if (ev.target===canvas){
             const unit = this.getViewport()[2];
             var nx=ev.offsetX/unit;
             var ny=ev.offsetY/unit;
-            this.clickCanvas(nx,ny);
+            this.clickCanvas(type,nx,ny);
         }
     }
 
@@ -187,7 +193,7 @@ function Scene(canvas, options){
         }
     }
 
-    this.handleTouch=function(ev){
+    this.handleTouch=function(type,ev){
         if (ev.target===canvas){
             var unit = this.getViewport()[2];
             var element  = ev.target;
@@ -195,7 +201,7 @@ function Scene(canvas, options){
             console.log(ev.touches[0],rect);
             var nx=(ev.touches[0].pageX-rect.left)/unit;
             var ny=(ev.touches[0].pageY-rect.top)/unit;
-            this.clickCanvas(nx,ny);
+            this.clickCanvas(type,nx,ny);
         }
     }
 
@@ -286,11 +292,17 @@ function Scene(canvas, options){
     var isTouch = 'ontouchstart' in window || navigator.msMaxTouchPoints;
     if (isTouch){
         window.addEventListener("touchstart",function(ev){
-            self.handleTouch(ev);
+            self.handleTouch("up",ev);
+        });
+        window.addEventListener("touchend",function(ev){
+            self.handleTouch("down",ev);
         });
     }else{
-        window.addEventListener("click",function(ev){
-            self.handleClick(ev);
+        window.addEventListener("mousedown",function(ev){
+            self.handleClick("down",ev);
+        });
+        window.addEventListener("mouseup",function(ev){
+            self.handleClick("up",ev);
         });
     }
     window.addEventListener("keydown",function(ev){

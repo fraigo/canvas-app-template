@@ -29,6 +29,7 @@ var gradients={
 }
 
 var borders={tl: 10, tr: 10, br: 10, bl: 10};
+var borders2={tl: 5, tr: 5, br: 5, bl: 5};
 
 
 var score=new Sprite({
@@ -141,6 +142,7 @@ function clickCanvas(scene){
                 newX0=Math.max(bar.x,items[line-1].x);
                 newX1=Math.min(bar.x+bw,items[line-1].x+(bar0.w?bar0.w:0));
                 newWidth=Math.max(0,newX1-newX0);
+                bar.borderRadius=scene.borderRadius(newWidth<=20?borders2:borders)
                 if (newWidth==bar0.w){
                     playAudio("bonus");
                     bar.fill=gradients.combo;
@@ -155,7 +157,7 @@ function clickCanvas(scene){
                     }
                     combo++;
                     bar0.text=newWidth + " x"+combo;
-                    addScore(newWidth); 
+                    addScore(newWidth*combo); 
                 }else{
                     combo=0;
                 }
@@ -233,7 +235,7 @@ function tick(scene){
             x: px, y:basey-py, 
             w:pw, h:barHeight, 
             fill: gradients.bar, border: colors.bar, 
-            borderRadius: scene.borderRadius(borders),
+            borderRadius: scene.borderRadius(pw<=20?borders2:borders),
             fontColor:"#800"}))    
     }else if(line>0){
         items[line].x+=direction*step;
@@ -273,7 +275,7 @@ function startStage(scene){
     window.scene=new Scene(canvas, {
         ratio: 1000/maxy,
         onTick: tick,
-        onClick: clickCanvas,
+        onPointerDown: clickCanvas,
         interval: initialInterval,
         onKeyDown: keyCanvas,
     });
