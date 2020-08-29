@@ -270,7 +270,7 @@ function Scene(canvas, options){
         var unit = this.getViewport()[2];
         if (ctx){
             ctx.fillStyle="#000";
-            ctx.fillRect(0,0,1000*unit,750*unit);
+            ctx.clearRect(0,0,1000*unit,750*unit);
             for(var idx in this.items){
                 var pt=this.items[idx];
                 this.drawItem(pt, unit);

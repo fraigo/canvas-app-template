@@ -13,7 +13,10 @@ body{
     --moz-user-select: none;
     --webkit-user-select: none;
     user-select: none;
+    background-size: cover;
+    background-position: center center;
 }
+
 #container{
     width: 100%;
     height: 100%;
@@ -23,4 +26,24 @@ body{
 }
 #scene{
     display: block;
+}
+
+body[level='1']{
+    background-image: linear-gradient(0deg, rgb(32, 22, 126), rgb(16, 11, 63));
+}
+
+body[level='2']{
+    background-image: linear-gradient(0deg, rgb(22, 126, 32), rgb(11, 63, 16));
+}
+
+body[level='3']{
+    background-image: linear-gradient(0deg, rgb(204, 82, 0), rgb(128, 51, 0));
+}
+
+body[level='4']{
+    background-image: linear-gradient(0deg, rgb(204, 0, 153), rgb(102, 0, 77));
+}
+
+body[level='5']{
+    background-image: linear-gradient(0deg, rgb(153, 77, 0), rgb(77, 38, 0));
 }

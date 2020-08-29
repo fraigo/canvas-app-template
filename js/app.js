@@ -251,6 +251,7 @@ function tick(scene){
 
 function startStage(scene){
     console.log("start",scene);
+    document.body.setAttribute("level",1+(stageNumber-1)%5);
     line=0;
     barWidth=500;
     barHeight-=2;
