@@ -60,6 +60,7 @@ var stageClear=new Sprite({
     h: 750,
     fill: "rgba(0,0,0,0.5)",
     fontColor: "#fff",
+    fontSize: 50,
     text: "Click to Start",
     visible: true
 });
