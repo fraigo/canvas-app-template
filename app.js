@@ -141,6 +141,7 @@ function clickCanvas(scene){
                 newX1=Math.min(bar.x+bw,items[line-1].x+(bar0.w?bar0.w:0));
                 newWidth=Math.max(0,newX1-newX0);
                 if (newWidth==bar0.w){
+                    playAudio("bonus");
                     bar.fill=gradients.combo;
                     bar.borderRadius.bl=1;
                     bar.borderRadius.br=1;
@@ -153,7 +154,7 @@ function clickCanvas(scene){
                     }
                     combo++;
                     bar0.text=newWidth + " x"+combo;
-                    addScore(Math.round(newWidth/2)); 
+                    addScore(newWidth); 
                 }else{
                     combo=0;
                 }
@@ -161,9 +162,11 @@ function clickCanvas(scene){
         }
         console.log("new",newX0,newX1,newWidth);
         if (newWidth==0){
+            playAudio("error");
             bar.fill="red";
             bar.border="black";
         }else{
+            playAudio("brick");
             bar.x=newX0;
             bar.w=newWidth;
             if (combo>0){
@@ -208,11 +211,14 @@ function tick(scene){
                 return;
             }
             if ((basey-py)<barHeight){
-                running = false;
-                stageClear.visible=true;
-                stageClear.text="Stage "+stageNumber+" cleared";
-                var maxst=storeRecord("towers.max_stage",stageNumber);
-                stageMax.text="Max Stage "+maxst;
+                if (running){
+                    playAudio("win");                
+                    running = false;
+                    stageClear.visible=true;
+                    stageClear.text="Stage "+stageNumber+" cleared";
+                    var maxst=storeRecord("towers.max_stage",stageNumber);
+                    stageMax.text="Max Stage "+maxst;
+                }
                 return;
             }
         }
@@ -277,6 +283,24 @@ function startStage(scene){
 })();
 
 
+var sounds={};
 
+function loadAudio(id,url){
+    var audio=document.createElement("audio");
+    audio.setAttribute("preload",true);
+    audio.src=url;
+    sounds[id]=audio;
+    return audio;
+}
 
+function playAudio(id){
+    if (sounds[id]){
+        sounds[id].play();
+    }
+}
+
+loadAudio("error","sound/blip01.mp3");
+loadAudio("brick","sound/blip02.mp3");
+loadAudio("win","sound/win.mp3");
+loadAudio("bonus","sound/bonus.mp3");
 
