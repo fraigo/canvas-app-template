@@ -284,22 +284,6 @@ function startStage(scene){
 })();
 
 
-var sounds={};
-
-function loadAudio(id,url){
-    var audio=document.createElement("audio");
-    audio.setAttribute("preload",true);
-    audio.src=url;
-    sounds[id]=audio;
-    return audio;
-}
-
-function playAudio(id){
-    if (sounds[id]){
-        sounds[id].play();
-    }
-}
-
 loadAudio("error","sound/blip01.mp3");
 loadAudio("brick","sound/blip02.mp3");
 loadAudio("win","sound/win.mp3");
