@@ -1,6 +1,6 @@
-window.addEventListener("error",function (msg, url, line, col, error){
-    console.log(msg, url, line, col, error);
-    alert(msg);
+window.addEventListener("error",function (err, url, line, col, error){
+    console.log(err, url, line, col, error);
+    alert(err.message);
 })
 
 

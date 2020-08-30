@@ -199,6 +199,9 @@ function Scene(canvas, options){
             var element  = ev.target;
             var rect=element.getBoundingClientRect();
             console.log(ev.touches[0],rect);
+            if (!ev.touches[0]){
+                return;
+            }
             var nx=(ev.touches[0].pageX-rect.left)/unit;
             var ny=(ev.touches[0].pageY-rect.top)/unit;
             this.clickCanvas(type,nx,ny);
@@ -292,10 +295,10 @@ function Scene(canvas, options){
     var isTouch = 'ontouchstart' in window || navigator.msMaxTouchPoints;
     if (isTouch){
         window.addEventListener("touchstart",function(ev){
-            self.handleTouch("up",ev);
+            self.handleTouch("down",ev);
         });
         window.addEventListener("touchend",function(ev){
-            self.handleTouch("down",ev);
+            self.handleTouch("up",ev);
         });
     }else{
         window.addEventListener("mousedown",function(ev){
