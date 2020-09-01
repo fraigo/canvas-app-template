@@ -13,7 +13,7 @@ var barWidth=500;
 var barHeight=60;
 var step = 10;
 var running = false;
-var maxy=720;
+var maxy=600;
 var basey=maxy-10;
 var stageNumber = 1;
 var initialInterval = 40;
@@ -97,7 +97,10 @@ ui.push(stageMax);
 
 
 function keyCanvas(scene, key){
-    console.log("key",key);
+    //console.log("key",key);
+    if ([13,32].indexOf(key)==-1){
+        return;
+    }
     clickCanvas(scene);
 }
 
@@ -163,7 +166,7 @@ function clickCanvas(scene){
                 }
             }
         }
-        console.log("new",newX0,newX1,newWidth);
+        //console.log("new",newX0,newX1,newWidth);
         if (newWidth==0){
             playAudio("error");
             bar.fill="red";

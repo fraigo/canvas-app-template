@@ -17,7 +17,7 @@ function Sprite(options) {
     this.fontName=options.fontName?options.fontName:"Arial";
     this.textAlign=options.textAlign?options.textAlign:"center";
     this.visible='visible' in options? options.visible : true;
-    this.onclick=options.onclick;
+    this.onClick=options.onClick;
 }
 
 
@@ -46,6 +46,8 @@ function Scene(canvas, options){
     var tickId=0;
     this.items=[];
     this.ui=[];
+    this.lastTouchX=0;
+    this.lastTouchY=0;
     
     this.getViewport=function(){
         var dw = Math.max(document.documentElement.clientWidth || 0, window.innerWidth || 0)
@@ -62,7 +64,7 @@ function Scene(canvas, options){
             w*=window.devicePixelRatio;
             h*=window.devicePixelRatio; 
             pixelRatio=window.devicePixelRatio; 
-            console.log(pixelRatio);
+            //console.log(pixelRatio);
         }
         unit=w/1000;
         return [w,h,unit,pixelRatio];
@@ -151,6 +153,13 @@ function Scene(canvas, options){
     }
 
     this.clickCanvas=function(type,x,y){
+        var clickItems=this.collidePoint(x,y);
+        console.log("clickCanvas",type,x,y,clickItems[0])
+        if (clickItems.length && clickItems[0].onClick){
+            if (!clickItems[0].onClick(type,x,y)){
+                return;
+            }
+        }
         if (type=="down" && this.onPointerDown){
             this.onPointerDown(self,x,y);
             this.repaint();
@@ -195,15 +204,23 @@ function Scene(canvas, options){
 
     this.handleTouch=function(type,ev){
         if (ev.target===canvas){
-            var unit = this.getViewport()[2];
+            var vp = this.getViewport();
+            var unit = vp[2];
+            var ratio = vp[3];
             var element  = ev.target;
             var rect=element.getBoundingClientRect();
-            console.log(ev.touches[0],rect);
-            if (!ev.touches[0]){
-                return;
+            //console.log("touch",type,ev,rect);
+            if (ev.changedTouches){
+                this.lastTouchX=ev.changedTouches[0].pageX;
+                this.lastTouchY=ev.changedTouches[0].pageY;
             }
-            var nx=(ev.touches[0].pageX-rect.left)/unit;
-            var ny=(ev.touches[0].pageY-rect.top)/unit;
+            if (ev.touches[0]){
+                var nx=(ev.touches[0].pageX-rect.left)*ratio/unit;
+                var ny=(ev.touches[0].pageY-rect.top)*ratio/unit;
+            }else{
+                var nx=(this.lastTouchX-rect.left)*ratio/unit;
+                var ny=(this.lastTouchY-rect.top)*ratio/unit;
+            }
             this.clickCanvas(type,nx,ny);
         }
     }
@@ -274,6 +291,30 @@ function Scene(canvas, options){
     }
 
 
+    this.collidePoint=function(x,y){
+        var items=[];
+        for(var idx in this.items){
+            var pt=this.items[idx];
+            if (pt.visible 
+                && pt.x<=x
+                && pt.y<=y
+                && pt.x+pt.w>=x
+                && pt.y+pt.h>=y){
+                    items.push(pt);
+            }
+        }
+        for(var idx in this.ui){
+            var pt=this.ui[idx];
+            if (pt.visible 
+                && pt.x<=x
+                && pt.y<=y
+                && pt.x+pt.w>=x
+                && pt.y+pt.h>=y){
+                    items.push(pt);
+            }
+        }
+        return items;
+    }
 
     this.repaint=function(){
         var unit = this.getViewport()[2];
@@ -297,12 +338,18 @@ function Scene(canvas, options){
         window.addEventListener("touchstart",function(ev){
             self.handleTouch("down",ev);
         });
+        window.addEventListener("touchmove",function(ev){
+            self.handleTouch("move",ev);
+        });
         window.addEventListener("touchend",function(ev){
             self.handleTouch("up",ev);
         });
     }else{
         window.addEventListener("mousedown",function(ev){
             self.handleClick("down",ev);
+        });
+        window.addEventListener("mousemove",function(ev){
+            self.handleClick("move",ev);
         });
         window.addEventListener("mouseup",function(ev){
             self.handleClick("up",ev);
